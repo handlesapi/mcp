@@ -1,0 +1,19 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "handles-api-key",
+      "description": "Handles API key",
+      "password": true
+    }
+  ],
+  "servers": {
+    "handles": {
+      "type": "http",
+      "url": "https://api.handlesapi.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:handles-api-key}"
+      }
+    }
+  }
+}

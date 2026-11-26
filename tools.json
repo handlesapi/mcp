@@ -1,0 +1,941 @@
+{
+  "server": "https://api.handlesapi.com/mcp",
+  "snapshot": "2026-11-26",
+  "tools": [
+    {
+      "name": "handles_check_account",
+      "title": "Check an account",
+      "description": "Check one account (platform plus handle) against the Handles API catalog: identity, audience size, verification, creation date where the platform publishes one, and how fresh the reading is. The cheapest check. A catalog miss means the account is not indexed, not that it does not exist. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Which platform the handle belongs to.",
+            "enum": [
+              "x",
+              "instagram",
+              "tiktok",
+              "youtube",
+              "telegram",
+              "bluesky",
+              "kick",
+              "twitch",
+              "linkedin"
+            ]
+          },
+          "handle": {
+            "type": "string",
+            "description": "The account handle, with or without the @. Bluesky handles are domains and a bare name is completed to <name>.bsky.social. LinkedIn takes the company slug."
+          }
+        },
+        "required": [
+          "platform",
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Check an account",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_directory_list",
+      "title": "List or search a platform catalog",
+      "description": "List or search the account catalog of one platform. Filter by full-text query (q), min_followers, country, language or category; sort by audience; page with the cursor from meta.page.next_cursor. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Which catalog to read.",
+            "enum": [
+              "x",
+              "telegram",
+              "bluesky",
+              "youtube",
+              "tiktok",
+              "instagram",
+              "kick",
+              "twitch"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows per page, 1 to 500.",
+            "default": 50
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque keyset position from meta.page.next_cursor. Signed; a hand-written cursor is rejected."
+          },
+          "sort": {
+            "type": "string",
+            "description": "Sort key. `id` walks the primary key and is the cheapest full-corpus order; the platform's audience metric (followers / subscribers) is the default and is index-backed to any depth. Other keys are served from an audience-ordered candidate window - see notes."
+          },
+          "order": {
+            "type": "string",
+            "description": "Sort direction.",
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "default": "desc"
+          },
+          "q": {
+            "type": "string",
+            "description": "Full-text search over name and bio, served by the catalog's GIN index. Available on X, Instagram, TikTok, YouTube and Telegram; Bluesky has no such index and returns 422 with a pointer to `search`."
+          },
+          "search": {
+            "type": "string",
+            "description": "Substring match on handle and display name. Unindexed by construction, so it is applied inside the audience-ordered candidate window rather than to the whole catalog."
+          },
+          "fields": {
+            "type": "string",
+            "description": "Comma-separated projection. Any field listed by GET /directory for that platform, plus weekly_growth. Omitting weekly_growth skips a per-row snapshot lookup."
+          },
+          "scope": {
+            "type": "string",
+            "description": "`addressable` (default) is the active, non-NSFW, handled catalog - the rows a public page can link to, and the only scope the ranked indexes cover. `all` is the full corpus including suspended, NSFW and handle-less rows, and can only be walked with sort=id.",
+            "enum": [
+              "addressable",
+              "all"
+            ],
+            "default": "addressable"
+          },
+          "min_followers": {
+            "type": "integer",
+            "description": "Audience floor. Every platform has a min/max pair on its own metric: min_followers (X, Bluesky, TikTok), min_participants (Telegram), min_subscribers (YouTube)."
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2, as inferred by the engine's geo classifier. Not available on TikTok."
+          },
+          "language": {
+            "type": "string",
+            "description": "ISO 639-1, as inferred by the engine's language classifier."
+          },
+          "category": {
+            "type": "string",
+            "description": "Topic category slug."
+          }
+        },
+        "required": [
+          "platform"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List or search a platform catalog",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_directory_get",
+      "title": "Get one catalog account",
+      "description": "Get the full catalog record of one account or channel by handle or platform id: profile, audience, metrics and, with include, growth, followers, engagement or similar accounts. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Which catalog to read.",
+            "enum": [
+              "x",
+              "telegram",
+              "bluesky",
+              "youtube",
+              "tiktok",
+              "instagram",
+              "kick",
+              "twitch"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Handle (case-insensitive, with or without @) or platform id. X, Instagram and TikTok accept the numeric user id, YouTube accepts the channel id, Bluesky accepts the DID, Telegram accepts the numeric peer id."
+          },
+          "include": {
+            "type": "string",
+            "description": "Comma-separated extras. growth = last 30 daily points. followers = the largest accounts within a sample of the inbound edges we hold, up to 10. engagement = headline engagement metrics (X only). Values: growth, followers, engagement, similar."
+          }
+        },
+        "required": [
+          "platform",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Get one catalog account",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_directory_growth",
+      "title": "Audience growth history",
+      "description": "Daily audience (followers or subscribers) history of one catalog account, for trend and growth analysis over up to 365 days. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Which catalog to read.",
+            "enum": [
+              "x",
+              "telegram",
+              "bluesky",
+              "youtube",
+              "tiktok",
+              "instagram",
+              "kick",
+              "twitch"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "Handle (case-insensitive, with or without @) or platform id. X, Instagram and TikTok accept the numeric user id, YouTube accepts the channel id, Bluesky accepts the DID, Telegram accepts the numeric peer id."
+          },
+          "days": {
+            "type": "integer",
+            "description": "How far back to read, 1 to 365 days.",
+            "default": 90
+          }
+        },
+        "required": [
+          "platform",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Audience growth history",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_directory_search",
+      "title": "Search all platforms by name",
+      "description": "Search accounts by handle or display name across several platforms at once. Returns the top matches per platform. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Search term, 2 to 120 characters."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Records per platform, 1 to 25.",
+            "default": 5
+          },
+          "platforms": {
+            "type": "string",
+            "description": "Comma-separated subset to search. Defaults to all six. Values: x, telegram, bluesky, youtube, tiktok, instagram, kick, twitch."
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Search all platforms by name",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_people_lookup",
+      "title": "Find a handle on every platform",
+      "description": "Look up a handle (up to 10) across the catalogs of X, Telegram, Bluesky, YouTube, TikTok and Instagram at once, with the evidence for whether the matches are the same owner. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "Handle to resolve, with or without the @. Up to 10, comma-separated."
+          },
+          "platforms": {
+            "type": "string",
+            "description": "Comma-separated subset to probe (x, telegram, bluesky, youtube, tiktok, instagram). Defaults to all six."
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Find a handle on every platform",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_people_search",
+      "title": "Find people by audience and engagement",
+      "description": "Find accounts across platforms matching audience size, engagement rate, language, category and verification criteria. Use it for creator and influencer discovery. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "min_audience": {
+            "type": "integer",
+            "description": "Lower bound on followers / subscribers / participants."
+          },
+          "max_audience": {
+            "type": "integer",
+            "description": "Upper bound on the same metric."
+          },
+          "min_engagement": {
+            "type": "number",
+            "description": "Minimum measured engagement rate, percent. Instagram only; reported as ignored elsewhere."
+          },
+          "language": {
+            "type": "string",
+            "description": "ISO 639-1 language code, as classified from the profile text."
+          },
+          "category": {
+            "type": "string",
+            "description": "Cross-platform category from the shared classifier."
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Restrict to verified accounts."
+          },
+          "q": {
+            "type": "string",
+            "description": "Full-text terms over name and bio. Skipped on catalogs with no full-text index."
+          },
+          "platforms": {
+            "type": "string",
+            "description": "Comma-separated subset to search. Defaults to all six. Values: x, telegram, bluesky, youtube, tiktok, instagram, kick, twitch."
+          },
+          "per_platform": {
+            "type": "integer",
+            "description": "Rows per platform, 1-25. Default 10."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Find people by audience and engagement",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_identity_graph",
+      "title": "Identity graph for a handle or company",
+      "description": "Resolve a handle (platform plus handle), a company website domain or a LinkedIn company slug to the linked accounts and profiles of the same entity across networks. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Network the handle belongs to. Required with handle, ignored otherwise.",
+            "enum": [
+              "linkedin",
+              "instagram",
+              "facebook",
+              "x",
+              "youtube",
+              "tiktok",
+              "github",
+              "bluesky",
+              "telegram"
+            ]
+          },
+          "handle": {
+            "type": "string",
+            "description": "Account handle, an @handle, or a full profile URL. Normalised before lookup."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Company website domain. A bare host, a full URL or an email address all work."
+          },
+          "company": {
+            "type": "string",
+            "description": "LinkedIn company slug, as it appears in the company page URL."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Identity graph for a handle or company",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_x_user",
+      "title": "X profile (live)",
+      "description": "Live X (Twitter) profile of one user, as X reports it right now: counters, verification flags, join date, images. Fresher than the catalog and costs more. Live read: 2 credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle, with or without @. A full x.com URL is accepted and stripped."
+          },
+          "fresh": {
+            "type": "boolean",
+            "description": "Bypass the upstream's 60-second burst cache. Only worth it when you are checking something that changed seconds ago - a bio the owner just edited - because it costs a real pool slot.",
+            "default": false
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "X profile (live)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_x_user_tweets",
+      "title": "X timeline (live)",
+      "description": "Live timeline of one X account, newest first, with engagement counts per post. Page with next_cursor. Live read: 2 credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle, with or without @. A full x.com URL is accepted and stripped."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows in this page, 1-100. The ceiling is the service's, not yours: asking for more returns the ceiling rather than an error.",
+            "default": 20
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque token from a previous response's next_cursor."
+          },
+          "include_replies": {
+            "type": "boolean",
+            "description": "Widen to the replies timeline: everything the account posted, including replies to other people.",
+            "default": false
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "X timeline (live)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_x_search_tweets",
+      "title": "Search X posts (live)",
+      "description": "Search X posts with X advanced-search syntax (for example: from:nasa filter:media min_faves:1000). product picks Latest, Top or Media. Live read: 2 credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "X advanced-search syntax, at most 500 characters, single line. Passed through untouched."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows in this page, 1-100. The ceiling is the service's, not yours: asking for more returns the ceiling rather than an error.",
+            "default": 20
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque token from a previous response's next_cursor."
+          },
+          "product": {
+            "type": "string",
+            "description": "Which search tab to read. Latest is chronological and complete; Top is X's own ranking and deliberately partial; Media returns only posts with attachments.",
+            "enum": [
+              "Latest",
+              "Top",
+              "Media"
+            ],
+            "default": "Latest"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Search X posts (live)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_x_user_followers",
+      "title": "X followers (live)",
+      "description": "Live list of an X account's followers, newest first, with their profile data. Page with next_cursor. Live read: 2 credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle, with or without @. A full x.com URL is accepted and stripped."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows in this page, 1-200. The ceiling is the service's, not yours: asking for more returns the ceiling rather than an error.",
+            "default": 200
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque token from a previous response's next_cursor."
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "X followers (live)",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_insights_x_account",
+      "title": "X account dossier",
+      "description": "Intelligence dossier for one X account in a single call: catalog profile, engagement rates, posting volume, best posts, virality patterns and where its engagement lands against peers. Pick sections with include. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle without the @. 1-15 characters, letters, digits and underscore."
+          },
+          "include": {
+            "type": "string",
+            "description": "Comma-separated sections to return, from: engagement, volume, top_tweets, viral_patterns, benchmark, narrative. Omit for all of them. account and coverage are always present."
+          },
+          "metric": {
+            "type": "string",
+            "description": "Which question the viral_patterns section answers.",
+            "enum": [
+              "engagement",
+              "views",
+              "engagement_per_view",
+              "bookmarks"
+            ],
+            "default": "engagement"
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "X account dossier",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_x_top_tweets",
+      "title": "X top posts",
+      "description": "The best-performing posts the engine keeps for one X account (up to 20), sortable by engagement, likes, retweets, replies or recency. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle without the @."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows to return, 1-100. The engine keeps at most 20 posts per account, so a higher limit simply returns everything there is.",
+            "default": 10
+          },
+          "sort": {
+            "type": "string",
+            "description": "Order within the kept set. engagement is the engine's own ranking; the others reorder the same rows.",
+            "enum": [
+              "engagement",
+              "likes",
+              "retweets",
+              "replies",
+              "recent"
+            ],
+            "default": "engagement"
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "X top posts",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_instagram_top_posts",
+      "title": "Instagram top posts",
+      "description": "Best-performing posts of one Instagram account from the catalog, ranked by likes, with comment and view counts, format and caption. Measured numbers, not estimates. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "Instagram handle, without the @."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Posts to return, 1 to 50.",
+            "default": 10
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Instagram top posts",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_instagram_content_mix",
+      "title": "Instagram content mix",
+      "description": "Which post format works on one Instagram account: reels, carousels and images, each compared against the account's own average. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "Instagram handle, without the @."
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Instagram content mix",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_trends_movers",
+      "title": "Fastest growing and falling accounts",
+      "description": "Accounts that gained (rising) or lost (falling) the most audience on one platform on the freshest finished day. The day is chosen by the server and returned in the response. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "description": "Which catalog to rank. Bluesky and LinkedIn are not available here; GET /trends/platforms says why.",
+            "enum": [
+              "x",
+              "instagram",
+              "tiktok",
+              "youtube",
+              "telegram"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "description": "rising returns the biggest gains, falling the biggest losses.",
+            "enum": [
+              "rising",
+              "falling"
+            ],
+            "default": "rising"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows to return, 1 to 100.",
+            "default": 25
+          }
+        },
+        "required": [
+          "platform"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Fastest growing and falling accounts",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_tool_valuation",
+      "title": "Estimate an X account's value",
+      "description": "Estimate what an X account is worth in dollars: a low, expected and high range with the multiplier behind each factor (followers, engagement, account age, authority, activity). Live read: 2 credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle. Accepts a bare name, @name, or a profile URL. Also accepted as `username`."
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Estimate an X account's value",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_tool_engagement_calculator",
+      "title": "X engagement rate",
+      "description": "Compute the true engagement rate of an X account from its recent posts: per-interaction rates, size-adjusted benchmarks, best and worst post and recent trend. Live read: 2 credits per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "X handle. Accepts a bare name, @name, or a profile URL. Also accepted as `username`."
+          }
+        },
+        "required": [
+          "handle"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "X engagement rate",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_linkedin_companies",
+      "title": "Search LinkedIn companies",
+      "description": "Search LinkedIn company pages by country, industry, size, name, follower floor, activity and contactability (has_email, has_decision_maker...). Page with the cursor. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2, derived by the engine from the free-text location. LinkedIn writes 'City, Region' and rarely names a country, so filter on this rather than on hq.country_text."
+          },
+          "industry": {
+            "type": "string",
+            "description": "Industry exactly as LinkedIn labels it."
+          },
+          "size": {
+            "type": "string",
+            "description": "Employee band exactly as LinkedIn labels it. Applied inside the scan window - see the pagination note."
+          },
+          "has_email": {
+            "type": "boolean",
+            "description": "Only companies with at least one non-suppressed contact address."
+          },
+          "has_website": {
+            "type": "boolean",
+            "description": "Only companies with a resolved website domain. Applied inside the scan window."
+          },
+          "has_decision_maker": {
+            "type": "boolean",
+            "description": "Only companies where we can name a founder, C-level, VP or director."
+          },
+          "has_social": {
+            "type": "boolean",
+            "description": "Only companies with a social handle that matched a row in one of our catalogs."
+          },
+          "min_followers": {
+            "type": "integer",
+            "description": "LinkedIn follower floor."
+          },
+          "active_days": {
+            "type": "integer",
+            "description": "Only companies that posted within this many days."
+          },
+          "q": {
+            "type": "string",
+            "description": "Substring match on company name, slug or website domain."
+          },
+          "sort": {
+            "type": "string",
+            "description": "readiness orders by the columns the contactability score is built from, then applies the exact score to the page.",
+            "enum": [
+              "followers",
+              "readiness",
+              "recent",
+              "staff"
+            ],
+            "default": "followers"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Rows per page, 1-200.",
+            "default": 50
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor from meta.page.next_cursor."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Search LinkedIn companies",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_linkedin_company",
+      "title": "LinkedIn company detail",
+      "description": "One LinkedIn company by slug, with its social handles, contact addresses and decision makers. 1 credit per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Company slug, the last path segment of its linkedin.com/company/ URL."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "LinkedIn company detail",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_request",
+      "title": "Call any Handles API endpoint",
+      "description": "Call any Handles API endpoint that is for sale, when no dedicated tool fits. Give the HTTP method, the path (with or without the /v1 prefix, for example /directory/x/nasa) and optionally query parameters and a JSON body. Paths that are not in the catalog are refused. Use handles_list_endpoints to see every endpoint with its credit cost. Each call costs what that endpoint costs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST"
+            ],
+            "description": "HTTP method of the endpoint."
+          },
+          "path": {
+            "type": "string",
+            "description": "Endpoint path, for example /accounts/x/nasa or /insights/x/nasa/engagement. Path parameters are filled in directly."
+          },
+          "query": {
+            "type": "object",
+            "description": "Query string parameters as key/value pairs. Arrays are joined with commas.",
+            "additionalProperties": true
+          },
+          "body": {
+            "type": "object",
+            "description": "JSON request body for POST endpoints.",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "method",
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Call any Handles API endpoint",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "handles_list_endpoints",
+      "title": "List Handles API endpoints",
+      "description": "List the endpoints Handles API sells, grouped by tag (Accounts, Directory, X, People, Insights, Trends, Identity, Graph, Tools, Leads...), with method, path and credit cost. Pass tag to see one group with one-line summaries. Free: this call does not spend credits. Use it to find an endpoint for handles_request.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "description": "Show only this tag, case-insensitive, with a summary per endpoint."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List Handles API endpoints",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ]
+}

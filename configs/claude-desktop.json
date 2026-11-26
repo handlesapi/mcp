@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "handles": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://api.handlesapi.com/mcp",
+        "--header",
+        "Authorization:${HANDLES_AUTH}"
+      ],
+      "env": {
+        "HANDLES_AUTH": "Bearer hk_live_..."
+      }
+    }
+  }
+}

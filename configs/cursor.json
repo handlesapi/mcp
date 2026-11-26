@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "handles": {
+      "url": "https://api.handlesapi.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:HANDLES_API_KEY}"
+      }
+    }
+  }
+}
