@@ -2,6 +2,8 @@
 
 # Handles API MCP server
 
+[![Handles API MCP connector](https://glama.ai/mcp/connectors/io.github.handlesapi/mcp/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.handlesapi/mcp)
+
 The Handles API MCP server gives Claude, Cursor, VS Code and any other [Model Context Protocol](https://modelcontextprotocol.io) client direct access to public data from X (Twitter), Instagram, TikTok, YouTube, Telegram, Bluesky, Twitch, Kick and LinkedIn companies. It is one hosted remote server, `https://api.handlesapi.com/mcp`, that you authenticate with your own [Handles API](https://handlesapi.com) key and that spends the same credits as the REST API. This repository holds ready-to-copy configuration for each client, the tool list, and small scripts for calling the server by hand.
 
 Nothing here needs installing: the server is remote (Streamable HTTP, one `POST` per call, no session).
