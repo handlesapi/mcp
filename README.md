@@ -1,3 +1,5 @@
+![Handles API MCP server: Claude Code and Cursor configuration](assets/readme-mcp.png)
+
 # Handles API MCP server
 
 The Handles API MCP server gives Claude, Cursor, VS Code and any other [Model Context Protocol](https://modelcontextprotocol.io) client direct access to public data from X (Twitter), Instagram, TikTok, YouTube, Telegram, Bluesky, Twitch, Kick and LinkedIn companies. It is one hosted remote server, `https://api.handlesapi.com/mcp`, that you authenticate with your own [Handles API](https://handlesapi.com) key and that spends the same credits as the REST API. This repository holds ready-to-copy configuration for each client, the tool list, and small scripts for calling the server by hand.
@@ -112,6 +114,8 @@ curl https://api.handlesapi.com/mcp \
 A successful call returns the JSON body of the endpoint as text, followed by the credits line. A failed call returns `isError: true` with the status, error code and message from the [error envelope](https://handlesapi.com/docs/errors).
 
 ## About the protocol
+
+![The MCP server page in the Handles API docs, showing the Claude Code and .mcp.json setup](assets/screenshot-mcp.png)
 
 The Model Context Protocol is an open standard that lets assistants call tools exposed by a server. This server speaks Streamable HTTP with JSON-RPC 2.0 (protocol versions 2024-11-05 through 2025-11-25) and supports `initialize`, `tools/list` and `tools/call`. See [modelcontextprotocol.io](https://modelcontextprotocol.io) and the [MCP docs](https://handlesapi.com/docs/mcp).
 
