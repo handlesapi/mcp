@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.handlesapi/mcp",
+  "title": "Handles API",
+  "description": "Public social media data for X, Instagram, TikTok, YouTube, Telegram, Bluesky, Twitch, Kick, LinkedIn.",
+  "version": "1.0.0",
+  "websiteUrl": "https://handlesapi.com",
+  "repository": {
+    "url": "https://github.com/handlesapi/mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.handlesapi.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Handles API key as a Bearer token. Get one at https://handlesapi.com/signup (free trial, no card).",
+          "value": "Bearer {api_key}",
+          "isRequired": true,
+          "isSecret": true,
+          "variables": {
+            "api_key": {
+              "description": "Your Handles API key (starts with hk_live_).",
+              "isRequired": true,
+              "isSecret": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
